@@ -43,12 +43,26 @@ module RSpecSystemPuppet::Helpers
     log.info("Preparing modules dir")
     system_run('mkdir -p /etc/puppet/modules')
 
+    # Create alias for puppet
     pp = <<-EOS
 host { 'puppet':
   ip => '127.0.0.1',
 }
     EOS
     puppet_apply(pp)
+
+    # Create hiera.yaml
+    file = Tempfile.new('hierayaml')
+    begin
+      file.write(<<-EOS)
+---
+:logger: noop
+      EOS
+      file.close
+      system_rcp(:sp => file.path, :dp => '/etc/puppet/hiera.yaml')
+    ensure
+      file.unlink
+    end
   end
 
   # Basic helper to install a puppet master
