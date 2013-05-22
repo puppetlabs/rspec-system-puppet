@@ -98,16 +98,16 @@ host { 'puppet':
   # @option opts [RSpecSystem::Node] :node node to execute DSL on
   # @option opts [Boolean] :debug true if debugging required
   # @option opts [Boolean] :trace true if trace required
-  # @return [Hash] a hash of results
+  # @return [RSpecSystem::Result] results containing keys :exit_code, :stdout and :stderr
   # @yield [result] yields result when called as a block
-  # @yieldparam result [Hash] a hash containing :exit_code, :stdout and :stderr
+  # @yieldparam result [RSpecSystem::Result] a hash containing :exit_code, :stdout and :stderr
   # @example
   #   puppet_agent.do |r|
-  #     r[:exit_code].should == 0
+  #     r.exit_code.should == 0
   #   end
   # @example with debugging enabled
   #   puppet_agent(:debug => true).do |r|
-  #     r[:exit_code].should == 0
+  #     r.exit_code.should == 0
   #   end
   def puppet_agent(opts = {})
     # Defaults etc.
@@ -155,6 +155,9 @@ host { 'puppet':
   # Runs puppet resource commands
   #
   # @param opts [Hash] a hash of opts
+  # @return [RSpecSystem::Result] results containing keys :exit_code, :stdout and :stderr
+  # @yield [result] yields result when called as a block
+  # @yieldparam result [RSpecSystem::Result] a hash containing :exit_code, :stdout and :stderr
   def puppet_resource(opts)
     if opts.is_a?(String)
       opts = {:resource => opts}
@@ -191,13 +194,13 @@ host { 'puppet':
   # @option opts [RSpecSystem::Node] :node node to execute DSL on
   # @option opts [Boolean] :debug true if debugging required
   # @option opts [Boolean] :trace true if trace required
-  # @return [Hash] a hash of results
+  # @return [RSpecSystem::Result] results containing keys :exit_code, :stdout and :stderr
   # @yield [result] yields result when called as a block
-  # @yieldparam result [Hash] a hash containing :exit_code, :stdout and :stderr
+  # @yieldparam result [RSpecSystem::Result] a hash containing :exit_code, :stdout and :stderr
   # @example
   #   it "run notice" do
   #     puppet_apply("notice('foo')") do |r|
-  #       r[:stdout].should =~ /foo/
+  #       r.stdout.should =~ /foo/
   #     end
   #   end
   def puppet_apply(opts)
@@ -247,9 +250,9 @@ host { 'puppet':
   #
   # @param opts [Hash] a hash of opts
   # @option opts [RSpecSystem::Node] :node node to execute DSL on
-  # @return [Hash] a hash of results
+  # @return [RSpecSystem::Result] a hash of results
   # @yield [result] yields result when called as a block
-  # @yieldparam result [Hash] a hash containing :facts, :exit_code, :stdout and
+  # @yieldparam result [RSpecSystem::Result] result containing :facts, :exit_code, :stdout and
   #   :stderr
   def facter(opts = {})
     # Defaults
@@ -266,7 +269,7 @@ host { 'puppet':
 
     begin
       facts = YAML::load(result[:stdout])
-      result[:facts] = facts
+      result.facts = facts
     rescue
     end
 
