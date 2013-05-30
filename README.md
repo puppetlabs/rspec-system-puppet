@@ -96,10 +96,7 @@ You will need a spec helper for your tests to `require`. So create the file `spe
       c.tty = true
 
       # This is where we 'setup' the nodes before running our tests
-      c.system_setup_block = proc do
-        # TODO: find a better way of importing this into this namespace
-        include RSpecSystemPuppet::Helpers
-
+      c.before :suite do
         # Install puppet
         puppet_install
         puppet_master_install
@@ -130,7 +127,7 @@ And create your first system tests in say `spec/system/basic_spec.rb` (make sure
 
         # Run it again and make sure no changes occurred this time, proving idempotency
         puppet_apply(pp) do |r|
-          r.exit_code.should == 0
+          r.exit_code.should be_zero
         end
       end
     end
@@ -158,6 +155,7 @@ Consult the .nodeset.yml file for the list of sets.
 * [API Documentation](http://rubydoc.info/gems/rspec-system-puppet/) - this provides the Ruby API docs for the Puppet Helpers. In particular look at the [Helpers](http://rubydoc.info/gems/rspec-system-puppet/RSpecSystemPuppet/Helpers) sub-class.
 * [rspec-system docs](http://rubydoc.info/gems/rspec-system) - This is the main library rspec-system-puppet utilises, and should provide more in-depth instructions on doing more complex stuff than what this gem alone provides.
 * [puppetlabs-firewall](http://github.com/puppetlabs/puppetlabs-firewall) - If you want to see the library in action this module is the primary guinea pig for rspec-system-puppet and should give you some ideas on writing tests of your own. Look under `spec/system` for the tests.
+* [puppetlabs-puppetdb](http://github.com/puppetlabs/puppetlabs-puppetdb) - Another example of the module in action.
 
 ## CI Integration
 

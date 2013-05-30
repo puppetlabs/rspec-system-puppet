@@ -9,13 +9,13 @@ module RSpecSystemPuppet::Helpers
   # @param opts [Hash] a hash of opts
   def puppet_install(opts = {})
     # Grab facts from node
-    facts = system_node.facts
+    facts = node.facts
 
     # Remove annoying mesg n from profile, otherwise on Debian we get:
     # stdin: is not a tty which messes with our tests later on.
     if facts['osfamily'] == 'Debian'
       log.info("Remove 'mesg n' from profile to stop noise")
-      system_run("sed -i 's/^mesg n/# mesg n/' /root/.profile")
+      shell "sed -i 's/^mesg n/# mesg n/' /root/.profile"
     end
 
     # Grab PL repository and install PL copy of puppet
@@ -23,25 +23,25 @@ module RSpecSystemPuppet::Helpers
     if facts['osfamily'] == 'RedHat'
       if facts['operatingsystem'] == 'Fedora'
         # Fedora testing is probably the best for now
-        system_run('sed -i "0,/RE/s/enabled=0/enabled=1/" /etc/yum.repos.d/fedora-updates-testing.repo')
+        shell 'sed -i "0,/RE/s/enabled=0/enabled=1/" /etc/yum.repos.d/fedora-updates-testing.repo'
       else
         if facts['operatingsystemrelease'] =~ /^6\./
-          system_run('rpm -ivh http://yum.puppetlabs.com/el/6/products/x86_64/puppetlabs-release-6-6.noarch.rpm')
+          shell 'rpm -ivh http://yum.puppetlabs.com/el/6/products/x86_64/puppetlabs-release-6-6.noarch.rpm'
         else
-          system_run('rpm -ivh http://yum.puppetlabs.com/el/5/products/x86_64/puppetlabs-release-5-6.noarch.rpm')
+          shell 'rpm -ivh http://yum.puppetlabs.com/el/5/products/x86_64/puppetlabs-release-5-6.noarch.rpm'
         end
       end
-      system_run('yum install -y puppet')
+      shell 'yum install -y puppet'
     elsif facts['osfamily'] == 'Debian'
-      system_run("wget http://apt.puppetlabs.com/puppetlabs-release-#{facts['lsbdistcodename']}.deb")
-      system_run("dpkg -i puppetlabs-release-#{facts['lsbdistcodename']}.deb")
-      system_run('apt-get update')
-      system_run('apt-get install -y puppet')
+      shell "wget http://apt.puppetlabs.com/puppetlabs-release-#{facts['lsbdistcodename']}.deb"
+      shell "dpkg -i puppetlabs-release-#{facts['lsbdistcodename']}.deb"
+      shell 'apt-get update'
+      shell 'apt-get install -y puppet'
     end
 
     # Prep modules dir
     log.info("Preparing modules dir")
-    system_run('mkdir -p /etc/puppet/modules')
+    shell 'mkdir -p /etc/puppet/modules'
 
     # Create alias for puppet
     pp = <<-EOS
@@ -59,7 +59,7 @@ host { 'puppet':
 :logger: noop
       EOS
       file.close
-      system_rcp(:sp => file.path, :dp => '/etc/puppet/hiera.yaml')
+      rcp(:sp => file.path, :dp => '/etc/puppet/hiera.yaml')
     ensure
       file.unlink
     end
@@ -77,18 +77,18 @@ host { 'puppet':
     node = opts[:node]
 
     # Grab facts from node
-    facts = system_node(:node => node).facts
+    facts = node(:node => node).facts
 
     if facts['osfamily'] == 'RedHat'
-      system_run(:n => node, :c => 'yum install -y puppet-server')
+      shell(:n => node, :c => 'yum install -y puppet-server')
       if facts['operatingsystemrelease'] =~ /^5\./
-        system_run(:n => node, :c => '/etc/init.d/puppetmaster start')
+        shell(:n => node, :c => '/etc/init.d/puppetmaster start')
       else
-        system_run(:n => node, :c => 'service puppetmaster start')
+        shell(:n => node, :c => 'service puppetmaster start')
       end
     elsif facts['osfamily'] == 'Debian'
-      system_run(:n => node, :c => 'apt-get install -y puppetmaster')
-      system_run(:n => node, :c => 'service puppetmaster start')
+      shell(:n => node, :c => 'apt-get install -y puppetmaster')
+      shell(:n => node, :c => 'service puppetmaster start')
     end
   end
 
@@ -122,7 +122,7 @@ host { 'puppet':
     cmd = "puppet agent -t --detailed-exitcodes"
     cmd += " --debug" if opts[:debug]
     cmd += " --trace" if opts[:trace]
-    result = system_run(:n => node, :c => cmd)
+    result = shell(:n => node, :c => cmd)
 
     if block_given?
       yield(result)
@@ -149,7 +149,7 @@ host { 'puppet':
     raise "Must provide :source and :module_name parameters" unless source && module_name
 
     log.info("Now transferring module onto node")
-    system_rcp(:sp => source, :d => node, :dp => File.join(module_path, module_name))
+    rcp(:sp => source, :d => node, :dp => File.join(module_path, module_name))
   end
 
   # Runs puppet resource commands
@@ -174,7 +174,7 @@ host { 'puppet':
     raise 'Must provide resource' unless resource
 
     log.info("Now running puppet resource")
-    result = system_run(:n => node, :c => "puppet resource #{resource}")
+    result = shell(:n => node, :c => "puppet resource #{resource}")
 
     if block_given?
       yield(result)
@@ -226,18 +226,18 @@ host { 'puppet':
     file.close
 
     remote_path = '/tmp/puppetapply.' + rand(1000000000).to_s
-    r = system_rcp(:sp => file.path, :dp => remote_path, :d => node)
+    r = rcp(:sp => file.path, :dp => remote_path, :d => node)
     file.unlink
 
     log.info("Cat file to see contents")
-    system_run(:n => node, :c => "cat #{remote_path}")
+    shell(:n => node, :c => "cat #{remote_path}")
 
     log.info("Now running puppet apply")
     cmd = "puppet apply --detailed-exitcodes"
     cmd += " --debug" if opts[:debug]
     cmd += " --trace" if opts[:trace]
     cmd += " #{remote_path}"
-    result = system_run(:n => node, :c => cmd)
+    result = shell(:n => node, :c => cmd)
 
     if block_given?
       yield(result)
@@ -265,10 +265,10 @@ host { 'puppet':
     raise "Must specify a node" unless node
 
     cmd = "facter -y"
-    result = system_run(:n => node, :c => cmd)
+    result = shell(:n => node, :c => cmd)
 
     begin
-      facts = YAML::load(result[:stdout])
+      facts = YAML::load(result.stdout)
       result.facts = facts
     rescue
     end
