@@ -1,95 +1,36 @@
 require 'rspec-system-puppet'
+require 'rspec-system-puppet/helpers/facter'
+require 'rspec-system-puppet/helpers/puppet_apply'
+require 'rspec-system-puppet/helpers/puppet_resource'
+require 'rspec-system-puppet/helpers/puppet_module_install'
+require 'rspec-system-puppet/helpers/puppet_install'
+require 'rspec-system-puppet/helpers/puppet_master_install'
+require 'rspec-system-puppet/helpers/puppet_agent'
 
+# This module contains the methods provide by rspec-system-puppet
 module RSpecSystemPuppet::Helpers
   include RSpecSystem::Helpers
-  include RSpecSystem::Log
 
   # Basic helper to install puppet
   #
   # @param opts [Hash] a hash of opts
-  def puppet_install(opts = {})
-    # Grab facts from node
-    facts = node.facts
-
-    # Remove annoying mesg n from profile, otherwise on Debian we get:
-    # stdin: is not a tty which messes with our tests later on.
-    if facts['osfamily'] == 'Debian'
-      log.info("Remove 'mesg n' from profile to stop noise")
-      shell "sed -i 's/^mesg n/# mesg n/' /root/.profile"
-    end
-
-    # Grab PL repository and install PL copy of puppet
-    log.info "Starting installation of puppet from PL repos"
-    if facts['osfamily'] == 'RedHat'
-      if facts['operatingsystem'] == 'Fedora'
-        # Fedora testing is probably the best for now
-        shell 'sed -i "0,/RE/s/enabled=0/enabled=1/" /etc/yum.repos.d/fedora-updates-testing.repo'
-      else
-        if facts['operatingsystemrelease'] =~ /^6\./
-          shell 'rpm -ivh http://yum.puppetlabs.com/el/6/products/x86_64/puppetlabs-release-6-6.noarch.rpm'
-        else
-          shell 'rpm -ivh http://yum.puppetlabs.com/el/5/products/x86_64/puppetlabs-release-5-6.noarch.rpm'
-        end
-      end
-      shell 'yum install -y puppet'
-    elsif facts['osfamily'] == 'Debian'
-      shell "wget http://apt.puppetlabs.com/puppetlabs-release-#{facts['lsbdistcodename']}.deb"
-      shell "dpkg -i puppetlabs-release-#{facts['lsbdistcodename']}.deb"
-      shell 'apt-get update'
-      shell 'apt-get install -y puppet'
-    end
-
-    # Prep modules dir
-    log.info("Preparing modules dir")
-    shell 'mkdir -p /etc/puppet/modules'
-
-    # Create alias for puppet
-    pp = <<-EOS
-host { 'puppet':
-  ip => '127.0.0.1',
-}
-    EOS
-    puppet_apply(pp)
-
-    # Create hiera.yaml
-    file = Tempfile.new('hierayaml')
-    begin
-      file.write(<<-EOS)
----
-:logger: noop
-      EOS
-      file.close
-      rcp(:sp => file.path, :dp => '/etc/puppet/hiera.yaml')
-    ensure
-      file.unlink
-    end
+  # @option opts [RSpecSystem::Node] :node node to execute DSL on
+  # @return [RspecSystemPuppet::Helpers::PuppetInstall] results
+  # @yield [result] yields result when called as a block
+  # @yieldparam result [RSpecSystem::Helpers::PuppetInstall] results
+  def puppet_install(opts = {}, &block)
+    RSpecSystemPuppet::Helpers::PuppetInstall.new(opts, self, &block)
   end
 
   # Basic helper to install a puppet master
   #
   # @param opts [Hash] a hash of opts
-  def puppet_master_install
-    # Defaults etc.
-    opts = {
-      :node => rspec_system_node_set.default_node,
-    }
-
-    node = opts[:node]
-
-    # Grab facts from node
-    facts = node(:node => node).facts
-
-    if facts['osfamily'] == 'RedHat'
-      shell(:n => node, :c => 'yum install -y puppet-server')
-      if facts['operatingsystemrelease'] =~ /^5\./
-        shell(:n => node, :c => '/etc/init.d/puppetmaster start')
-      else
-        shell(:n => node, :c => 'service puppetmaster start')
-      end
-    elsif facts['osfamily'] == 'Debian'
-      shell(:n => node, :c => 'apt-get install -y puppetmaster')
-      shell(:n => node, :c => 'service puppetmaster start')
-    end
+  # @option opts [RSpecSystem::Node] :node node to execute DSL on
+  # @return [RspecSystemPuppet::Helpers::PuppetMasterInstall] results
+  # @yield [result] yields result when called as a block
+  # @yieldparam result [RSpecSystem::Helpers::PuppetMasterInstall] results
+  def puppet_master_install(opts = {}, &block)
+    RSpecSystemPuppet::Helpers::PuppetMasterInstall.new(opts, self, &block)
   end
 
   # Run puppet agent
@@ -98,9 +39,9 @@ host { 'puppet':
   # @option opts [RSpecSystem::Node] :node node to execute DSL on
   # @option opts [Boolean] :debug true if debugging required
   # @option opts [Boolean] :trace true if trace required
-  # @return [RSpecSystem::Result] results containing keys :exit_code, :stdout and :stderr
+  # @return [RSpecSystem::Helpers::PuppetAgent] results
   # @yield [result] yields result when called as a block
-  # @yieldparam result [RSpecSystem::Result] a hash containing :exit_code, :stdout and :stderr
+  # @yieldparam result [RSpecSystem::Helpers::PuppetAgent] results
   # @example
   #   puppet_agent.do |r|
   #     r.exit_code.should == 0
@@ -109,78 +50,34 @@ host { 'puppet':
   #   puppet_agent(:debug => true).do |r|
   #     r.exit_code.should == 0
   #   end
-  def puppet_agent(opts = {})
-    # Defaults etc.
-    opts = {
-      :node => rspec_system_node_set.default_node,
-      :debug => false,
-      :trace => true,
-    }.merge(opts)
-
-    node = opts[:node]
-
-    cmd = "puppet agent -t --detailed-exitcodes"
-    cmd += " --debug" if opts[:debug]
-    cmd += " --trace" if opts[:trace]
-    result = shell(:n => node, :c => cmd)
-
-    if block_given?
-      yield(result)
-    else
-      result
-    end
+  def puppet_agent(opts = {}, &block)
+    RSpecSystemPuppet::Helpers::PuppetAgent.new(opts, self, &block)
   end
 
   # Helper to copy a module onto a node from source
   #
   # @param opts [Hash] a hash of opts
-  def puppet_module_install(opts)
-    # Defaults etc.
-    opts = {
-      :node => rspec_system_node_set.default_node,
-      :module_path => "/etc/puppet/modules",
-    }.merge(opts)
-
-    source = opts[:source]
-    module_name = opts[:module_name]
-    module_path = opts[:module_path]
-    node = opts[:node]
-
-    raise "Must provide :source and :module_name parameters" unless source && module_name
-
-    log.info("Now transferring module onto node")
-    rcp(:sp => source, :d => node, :dp => File.join(module_path, module_name))
+  # @option opts [RSpecSystem::Node] :node node to execute DSL on
+  # @return [RSpecSystem::Helpers::PuppetModuleInstall] results
+  # @yield [result] yields result when called as a block
+  # @yieldparam result [RSpecSystem::Helpers::PuppetModuleInstall] results
+  def puppet_module_install(opts, &block)
+    RSpecSystemPuppet::Helpers::PuppetModuleInstall.new(opts, self, &block)
   end
 
   # Runs puppet resource commands
   #
   # @param opts [Hash] a hash of opts
-  # @return [RSpecSystem::Result] results containing keys :exit_code, :stdout and :stderr
+  # @option opts [RSpecSystem::Node] :node node to execute DSL on
+  # @return [RSpecSystem::Helpers::PuppetResource] results
   # @yield [result] yields result when called as a block
-  # @yieldparam result [RSpecSystem::Result] a hash containing :exit_code, :stdout and :stderr
-  def puppet_resource(opts)
+  # @yieldparam result [RSpecSystem::Helpers::PuppetResource] results
+  def puppet_resource(opts, &block)
     if opts.is_a?(String)
       opts = {:resource => opts}
     end
 
-    # Defaults
-    opts = {
-      :node => rspec_system_node_set.default_node
-    }.merge(opts)
-
-    resource = opts[:resource]
-    node = opts[:node]
-
-    raise 'Must provide resource' unless resource
-
-    log.info("Now running puppet resource")
-    result = shell(:n => node, :c => "puppet resource #{resource}")
-
-    if block_given?
-      yield(result)
-    else
-      result
-    end
+    RSpecSystemPuppet::Helpers::PuppetResource.new(opts, self, &block)
   end
 
   # Run puppet DSL code directly with `puppet apply`.
@@ -194,89 +91,30 @@ host { 'puppet':
   # @option opts [RSpecSystem::Node] :node node to execute DSL on
   # @option opts [Boolean] :debug true if debugging required
   # @option opts [Boolean] :trace true if trace required
-  # @return [RSpecSystem::Result] results containing keys :exit_code, :stdout and :stderr
+  # @return [RSpecSystem::Helpers::PuppetApply] helper object
   # @yield [result] yields result when called as a block
-  # @yieldparam result [RSpecSystem::Result] a hash containing :exit_code, :stdout and :stderr
-  # @example
+  # @yieldparam result [RSpecSystemPuppet::Helpers::PuppetApply] helper object
   #   it "run notice" do
   #     puppet_apply("notice('foo')") do |r|
   #       r.stdout.should =~ /foo/
   #     end
   #   end
-  def puppet_apply(opts)
+  def puppet_apply(opts, &block)
     if opts.is_a?(String)
       opts = {:code => opts}
     end
 
-    # Defaults
-    opts = {
-      :node => rspec_system_node_set.default_node,
-      :debug => false,
-      :trace => true,
-    }.merge(opts)
-
-    code = opts[:code]
-    node = opts[:node]
-
-    raise 'Must provide code' unless code
-
-    log.info("Copying DSL to remote host")
-    file = Tempfile.new('rsp_puppet_apply')
-    file.write(code)
-    file.close
-
-    remote_path = '/tmp/puppetapply.' + rand(1000000000).to_s
-    r = rcp(:sp => file.path, :dp => remote_path, :d => node)
-    file.unlink
-
-    log.info("Cat file to see contents")
-    shell(:n => node, :c => "cat #{remote_path}")
-
-    log.info("Now running puppet apply")
-    cmd = "puppet apply --detailed-exitcodes"
-    cmd += " --debug" if opts[:debug]
-    cmd += " --trace" if opts[:trace]
-    cmd += " #{remote_path}"
-    result = shell(:n => node, :c => cmd)
-
-    if block_given?
-      yield(result)
-    else
-      result
-    end
+    RSpecSystemPuppet::Helpers::PuppetApply.new(opts, self, &block)
   end
 
   # Run facter on a remote machine
   #
   # @param opts [Hash] a hash of opts
   # @option opts [RSpecSystem::Node] :node node to execute DSL on
-  # @return [RSpecSystem::Result] a hash of results
+  # @return [RSpecSystemPuppet::Helpers::Facter] helper object
   # @yield [result] yields result when called as a block
-  # @yieldparam result [RSpecSystem::Result] result containing :facts, :exit_code, :stdout and
-  #   :stderr
-  def facter(opts = {})
-    # Defaults
-    opts = {
-      :node => rspec_system_node_set.default_node,
-    }.merge(opts)
-
-    node = opts[:node]
-
-    raise "Must specify a node" unless node
-
-    cmd = "facter -y"
-    result = shell(:n => node, :c => cmd)
-
-    begin
-      facts = YAML::load(result.stdout)
-      result.facts = facts
-    rescue
-    end
-
-    if block_given?
-      yield(result)
-    else
-      result
-    end
+  # @yieldparam result [RSpecSystemPuppet::Helpers::Facter] helper object
+  def facter(opts = {}, &block)
+    RSpecSystemPuppet::Helpers::Facter.new(opts, self, &block)
   end
 end

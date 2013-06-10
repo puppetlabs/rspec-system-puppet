@@ -13,7 +13,7 @@ While unit testing using [rspec-puppet](https://rubygems.org/gems/rspec-puppet) 
 
 Recommended to be installed first:
 
-* Vagrant 1.1.5 or greater
+* Vagrant 1.2.2 or greater
 * VirtualBox 4.2.10 or greater
 * RVM or RBenv (current instructions are based on RVM however)
 
@@ -88,12 +88,16 @@ You will need a spec helper for your tests to `require`. So create the file `spe
     require 'rspec-system/spec_helper'
     require 'rspec-system-puppet/helpers'
 
+    include RSpecSystemPuppet::Helpers
+
     RSpec.configure do |c|
       # Project root for the firewall code
       proj_root = File.expand_path(File.join(File.dirname(__FILE__), '..'))
 
       # Enable colour in Jenkins
       c.tty = true
+
+      c.include RSpecSystemPuppet::Helpers
 
       # This is where we 'setup' the nodes before running our tests
       c.before :suite do
@@ -114,7 +118,16 @@ Now if you are using rspec-puppet, I advise you to seperate the location of your
 And create your first system tests in say `spec/system/basic_spec.rb` (make sure it has the _spec.rb suffix!):
 
     require 'spec_helper_system'
+
     describe 'basic tests:' do
+      # Using puppet_apply as a subject
+      context puppet_apply 'notice("foo")' do
+        its(:stdout) { should =~ /foo/ }
+        its(:stderr) { should be_empty }
+        its(:exit_code) { should be_zero }
+      end
+
+      # Using puppet_apply as a helper
       it 'my class should work with no errors' do
         pp = <<-EOS
           class { 'mymodule': }
