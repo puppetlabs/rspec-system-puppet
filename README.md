@@ -17,6 +17,8 @@ Recommended to be installed first:
 * VirtualBox 4.2.10 or greater
 * RVM or RBenv (current instructions are based on RVM however)
 
+### Create a nodeset file
+
 In your existing Puppet module project, create a `.nodeset.yml` with the following contents:
 
     ---
@@ -51,12 +53,21 @@ In your existing Puppet module project, create a `.nodeset.yml` with the followi
           "main.foo.vm":
             prefab: 'ubuntu-server-12042-x64'
 
-Make sure you have a `Gemfile` like the one below, this includes `rspec-puppet` test content as well:
+### Install the gem
+
+The intention is that this gem is used within your project as a development library.
+
+You may install `rspec-system-puppet` manually with:
+
+    # gem install rspec-system-puppet
+
+However it is usually recommended to include `gem 'rspec-system-puppet'` in your `Gemfile` and let bundler install it. An example `Gemfile` is shown below. This includes `rspec-puppet` test content as well:
 
     source 'https://rubygems.org'
 
     group :development, :test do
       gem 'rake'
+      gem 'rspec-puppet'
       gem 'puppetlabs_spec_helper', :require => false
       gem 'rspec-system-puppet'
       gem 'puppet-lint'
@@ -68,20 +79,24 @@ Make sure you have a `Gemfile` like the one below, this includes `rspec-puppet` 
       gem 'puppet', :require => false
     end
 
+Install using Bundler with:
+
+    bundle install --path vendor/bundle
+
+If you're using git, add `.rspec_system` to your project's `.gitignore` file.  This is the default location for files created by rspec-system.
+
+### Create rakefile
+
 Create a `Rakefile` like so:
 
-    require 'rubygems'
-    require 'bundler/setup'
-
-    Bundler.require :default
-
-    require 'rspec/core/rake_task'
     require 'puppetlabs_spec_helper/rake_tasks'
     require 'rspec-system/rake_task'
 
     task :default do
       sh %{rake -T}
     end
+
+### Create spec helper
 
 You will need a spec helper for your tests to `require`. So create the file `spec/spec_helper_system.rb`:
 
@@ -91,10 +106,10 @@ You will need a spec helper for your tests to `require`. So create the file `spe
     include RSpecSystemPuppet::Helpers
 
     RSpec.configure do |c|
-      # Project root for the firewall code
+      # Project root
       proj_root = File.expand_path(File.join(File.dirname(__FILE__), '..'))
 
-      # Enable colour in Jenkins
+      # Enable colour
       c.tty = true
 
       c.include RSpecSystemPuppet::Helpers
@@ -110,7 +125,9 @@ You will need a spec helper for your tests to `require`. So create the file `spe
       end
     end
 
-Now if you are using rspec-puppet, I advise you to seperate the location of your system and unit tests:
+### Create system spec tests
+
+I advise you to seperate the location of your system and unit tests:
 
 * spec/system - system tests
 * spec/unit - rspec-puppet and other unit tests
@@ -132,7 +149,7 @@ And create your first system tests in say `spec/system/basic_spec.rb` (make sure
         pp = <<-EOS
           class { 'mymodule': }
         EOS
-      
+
         # Run it twice and test for idempotency
         puppet_apply(pp) do |r|
           r.exit_code.should_not == 1
@@ -142,23 +159,17 @@ And create your first system tests in say `spec/system/basic_spec.rb` (make sure
       end
     end
 
-Now start by creating a gemset environment for your run:
-
-    # rvm --create --ruby-version use ruby-1.9.3@mymodule
-
-Then grab the gemset bundle:
-
-    # bundle update
+### Run spec tests
 
 Now you should be able to do:
 
-    # rake spec:system
-    
-If you want to test an alternate set, just use the RSPEC_SET environment variable like so:
+    # bundle exec rake spec:system
 
-    # RSPEC_SET=debian-70rc1-x64 rake spec:system
-    
-Consult the .nodeset.yml file for the list of sets.
+If you want to test an alternate set, just use the `RSPEC_SET` environment variable like so:
+
+    # RSPEC_SET=debian-70rc1-x64 bundle exec rake spec:system
+
+Consult the `.nodeset.yml` file for the list of sets.
 
 ## Further Information
 

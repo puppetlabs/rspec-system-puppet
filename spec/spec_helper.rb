@@ -1,11 +1,6 @@
 dir = File.expand_path(File.dirname(__FILE__))
 $LOAD_PATH.unshift File.join(dir, 'lib')
 
-require 'rubygems'
-require 'bundler/setup'
-
-Bundler.require :default, :test
-
 require 'pathname'
 require 'tmpdir'
 
