@@ -91,6 +91,7 @@ module RSpecSystemPuppet::Helpers
   # @option opts [RSpecSystem::Node] :node node to execute DSL on
   # @option opts [Boolean] :debug true if debugging required
   # @option opts [Boolean] :trace true if trace required
+  # @option opts [String] :module_path puppet modulepath to use
   # @return [RSpecSystem::Helpers::PuppetApply] helper object
   # @yield [result] yields result when called as a block
   # @yieldparam result [RSpecSystemPuppet::Helpers::PuppetApply] helper object

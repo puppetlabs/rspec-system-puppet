@@ -41,6 +41,7 @@ module RSpecSystem::Helpers
       cmd = "puppet apply --detailed-exitcodes"
       cmd += " --debug" if opts[:debug]
       cmd += " --trace" if opts[:trace]
+      cmd += " --modulepath #{opts[:module_path]}" if opts[:module_path]
       cmd += " #{remote_path}"
 
       shell(:c => cmd, :n => node).to_hash
