@@ -48,7 +48,7 @@ host { 'puppet':
   ip => '127.0.0.1',
 }
       EOS
-      puppet_apply(pp)
+      puppet_apply :code => pp, :n => node
 
       # Create hiera.yaml
       file = Tempfile.new('hierayaml')
