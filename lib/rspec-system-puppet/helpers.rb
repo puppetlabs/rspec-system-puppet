@@ -111,6 +111,7 @@ module RSpecSystemPuppet::Helpers
   # Run facter on a remote machine
   #
   # @param opts [Hash] a hash of opts
+  # @option opts [Boolean] :puppet true to load Puppet custom facts
   # @option opts [RSpecSystem::Node] :node node to execute DSL on
   # @return [RSpecSystemPuppet::Helpers::Facter] helper object
   # @yield [result] yields result when called as a block

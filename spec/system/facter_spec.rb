@@ -17,6 +17,14 @@ describe "helper facter" do
     end
   end
 
+  it 'puppet option should return valid myfact fact' do
+    facter(:puppet => true) do |r|
+      r.stderr.should be_empty
+      r.facts['myfact'].should =~ /myfact/
+      r.exit_code.should be_zero
+    end
+  end
+
   context 'test as a subject' do
     context facter do
       its(:stderr) { should be_empty }

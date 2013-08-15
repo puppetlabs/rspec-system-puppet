@@ -8,12 +8,25 @@ module RSpecSystem::Helpers
     name 'facter'
     properties :stdout, :stderr, :exit_code, :facts
 
+    def initialize(opts, clr, &block)
+      # Defaults etc.
+      opts = {
+        :puppet => false,
+      }.merge(opts)
+
+      super(opts, clr, &block)
+    end
+
     # Gathers new results by executing the resource action
     #
     # @return [RSpecSystem::Result] raw execution results
     def execute
       node = opts[:node]
-      sh = shell :c => "facter -y", :n => node
+      
+      cmd = "facter --yaml"
+      cmd += " --puppet" if opts[:puppet]
+      
+      sh = shell :c => cmd, :n => node
 
       rd = sh.to_hash
       rd[:facts] = begin
