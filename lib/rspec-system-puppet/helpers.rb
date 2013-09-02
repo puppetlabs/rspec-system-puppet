@@ -1,4 +1,5 @@
 require 'rspec-system-puppet'
+require 'rspec-system-puppet/spec_helper'
 require 'rspec-system-puppet/helpers/facter'
 require 'rspec-system-puppet/helpers/puppet_apply'
 require 'rspec-system-puppet/helpers/puppet_resource'

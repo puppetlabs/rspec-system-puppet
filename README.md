@@ -171,6 +171,13 @@ If you want to test an alternate set, just use the `RSPEC_SET` environment varia
 
 Consult the `.nodeset.yml` file for the list of sets.
 
+### Runtime options
+
+The following options can defined using environment variables:
+
+* *RSPEC_PUPPET_REPO_BASE* - the URL base component of the puppetlabs-release package.
+  * For RedHat systems the default is *http://yum.puppetlabs.com* and for Debian systems it is *http://apt.puppetlabs.com*.
+
 ## Further Information
 
 * [API Documentation](http://rubydoc.info/gems/rspec-system-puppet/) - this provides the Ruby API docs for the Puppet Helpers. In particular look at the [Helpers](http://rubydoc.info/gems/rspec-system-puppet/RSpecSystemPuppet/Helpers) sub-class.
