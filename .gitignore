@@ -2,5 +2,7 @@ Gemfile.lock
 *.gem
 .*.swp
 doc/
+vendor/
+.bundle
 .yardoc
 .rspec_system/

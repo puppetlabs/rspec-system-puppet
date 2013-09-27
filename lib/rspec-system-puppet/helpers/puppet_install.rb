@@ -25,9 +25,9 @@ module RSpecSystem::Helpers
           shell :c => 'sed -i "0,/RE/s/enabled=0/enabled=1/" /etc/yum.repos.d/fedora-updates-testing.repo', :n => node
         else
           if facts['operatingsystemrelease'] =~ /^6\./
-            shell :c => 'rpm -ivh http://yum.puppetlabs.com/el/6/products/x86_64/puppetlabs-release-6-6.noarch.rpm', :n => node
+            shell :c => 'rpm -ivh http://yum.puppetlabs.com/el/6/products/x86_64/puppetlabs-release-6-7.noarch.rpm', :n => node
           else
-            shell :c => 'rpm -ivh http://yum.puppetlabs.com/el/5/products/x86_64/puppetlabs-release-5-6.noarch.rpm', :n => node
+            shell :c => 'rpm -ivh http://yum.puppetlabs.com/el/5/products/x86_64/puppetlabs-release-5-7.noarch.rpm', :n => node
           end
         end
         shell :c => 'yum install -y puppet', :n => node
