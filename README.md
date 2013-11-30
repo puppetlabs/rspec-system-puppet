@@ -116,7 +116,7 @@ And create your first system tests in say `spec/system/basic_spec.rb` (make sure
 
         # Run it twice and test for idempotency
         puppet_apply(pp) do |r|
-          r.exit_code.should_not == 1
+          [0,2].should include r.exit_code
           r.refresh
           r.exit_code.should be_zero
         end
