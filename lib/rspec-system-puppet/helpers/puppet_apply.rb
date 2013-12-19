@@ -43,6 +43,7 @@ module RSpecSystem::Helpers
       cmd += " --debug" if opts[:debug]
       cmd += " --trace" if opts[:trace]
       cmd += " --modulepath #{opts[:module_path]}" if opts[:module_path]
+      cmd += " --write-catalog-summary" if opts[:write_catalog_summary]
       cmd += " #{remote_path}"
       cmd = "chown #{user} #{remote_path} && su - #{user} -c '#{cmd}'" if user
 
