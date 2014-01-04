@@ -1,10 +1,13 @@
 require 'rspec-system'
+require 'rspec-system-puppet/util'
 
 module RSpecSystem::Helpers
   # puppet_apply helper
   class PuppetApply < RSpecSystem::Helper
     name 'puppet_apply'
     properties :stdout, :stderr, :exit_code
+
+    include RSpecSystemPuppet::Util
 
     def initialize(opts, clr, &block)
       # Defaults
@@ -36,7 +39,12 @@ module RSpecSystem::Helpers
       file.unlink
 
       log.info("Cat file to see contents")
-      shell :c => "cat #{remote_path}", :n => node
+      if is_windows?(node)
+        shell :c => "type #{remote_path}", :n => node
+      else
+        shell :c => "cat #{remote_path}", :n => node
+      end
+
 
       log.info("Now running puppet apply")
       cmd = "puppet apply --detailed-exitcodes"
