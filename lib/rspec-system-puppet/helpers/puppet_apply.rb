@@ -33,8 +33,14 @@ module RSpecSystem::Helpers
       file = Tempfile.new('rcp_puppet_apply')
       file.write(code)
       file.close
+      
+      if is_windows?(node)
+        tmp_path = 'C:/Windows/Temp/'
+      else
+        tmp_path = '/tmp/'
+      end
 
-      remote_path = '/tmp/puppetapply.' + rand(1000000000).to_s
+      remote_path = tmp_path + 'puppetapply.' + rand(1000000000).to_s
       r = rcp(:sp => file.path, :dp => remote_path, :d => node)
       file.unlink
 
@@ -45,14 +51,20 @@ module RSpecSystem::Helpers
         shell :c => "cat #{remote_path}", :n => node
       end
 
-
       log.info("Now running puppet apply")
-      cmd = "puppet apply --detailed-exitcodes"
+      if is_windows?(node)
+        cmd = "puppet.bat apply"
+      else
+        cmd = "puppet apply"
+      end
+  
+      cmd += " --detailed-exitcodes"
       cmd += " --debug" if opts[:debug]
       cmd += " --trace" if opts[:trace]
       cmd += " --modulepath #{opts[:module_path]}" if opts[:module_path]
       cmd += " #{remote_path}"
-      cmd = "chown #{user} #{remote_path} && su - #{user} -c '#{cmd}'" if user
+      
+      #cmd = "chown #{user} #{remote_path} && su - #{user} -c '#{cmd}'" if user
 
       shell(:c => cmd, :n => node).to_hash
     end

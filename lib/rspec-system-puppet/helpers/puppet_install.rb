@@ -36,12 +36,23 @@ module RSpecSystem::Helpers
         shell :c => "dpkg -i puppetlabs-release-#{facts['lsbdistcodename']}.deb", :n => node
         shell :c => 'apt-get update', :n => node
         shell :c => 'apt-get install -y puppet', :n => node
+      elsif facts['osfamily'] == 'windows'
+        # Download the file locally - assumes powershell v2 is already installed
+        shell :c => 'echo . | powershell.exe -NoLogo -Command \"&{ (New-Object Net.WebClient).DownloadFile(\'http://downloads.puppetlabs.com/windows/puppet-3.4.1.msi\', \'C:\Windows\Temp\puppet-3.4.1.msi\') }\"', :n => node
+        
+        shell :c => 'echo . | powershell.exe -NoLogo -Command \"&{ Start-Process msiexec.exe -ArgumentList \'/qn /i C:\Windows\Temp\puppet-3.4.1.msi /l*v C:\Windows\Temp\puppet_install.log\' -Wait }\"', :n => node
+      end
+      
+      if facts['osfamily'] == 'windows'
+        puppet_dir = '/cygdrive/c/etc/puppet'
+      else
+        puppet_dir = '/etc/puppet'
       end
 
       # Prep modules dir
       log.info("Preparing modules dir")
-      shell :c => 'mkdir -p /etc/puppet/modules', :n => node
-
+      shell :c => "mkdir -p #{puppet_dir}/modules", :n => node
+      
       # Create alias for puppet
       pp = <<-EOS
 host { 'puppet':
@@ -58,7 +69,7 @@ host { 'puppet':
 :logger: noop
         EOS
         file.close
-        rcp(:sp => file.path, :dp => '/etc/puppet/hiera.yaml', :d => node)
+        rcp(:sp => file.path, :dp => "#{puppet_dir}/hiera.yaml", :d => node)
       ensure
         file.unlink
       end
