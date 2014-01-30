@@ -28,7 +28,7 @@ module RSpecSystem::Helpers
       puts source_contents
       source_contents.each do |file|
         unless skip.include? file
-          shell :c => "mkdir -p \"#{File.join(module_path, module_name)}\"", :d => node
+          shell :c => "mkdir -p \"#{File.join(module_path, module_name)}\"", :n => node
           result = rcp :sp => "#{source}/#{file}", :d => node, :dp => File.join(module_path, module_name, file)
           unless result[:success]
             return result
