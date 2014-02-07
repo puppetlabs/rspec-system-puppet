@@ -6,3 +6,4 @@ vendor/
 .bundle
 .yardoc
 .rspec_system/
+.ruby-version
