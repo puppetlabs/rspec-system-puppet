@@ -21,6 +21,7 @@ Recommended to be installed first:
 
 In your existing Puppet module project, create a `.nodeset.yml` with the following contents:
 
+```yaml
     ---
     default_set: 'centos-64-x64'
     sets:
@@ -32,6 +33,7 @@ In your existing Puppet module project, create a `.nodeset.yml` with the followi
         nodes:
           'main.foo.vm':
             prefab: 'debian-70rc1-x64'
+```
 
 ### Install the gem
 
@@ -39,16 +41,18 @@ The intention is that this gem is used within your project as a development libr
 
 You may install `rspec-system-puppet` manually with:
 
-    # gem install rspec-system-puppet
+    gem install rspec-system-puppet
 
 However it is usually recommended to include `gem 'rspec-system-puppet'` in your `Gemfile` and let bundler install it. A bare-minimum example `Gemfile` is shown below:
 
+```ruby
     source 'https://rubygems.org'
 
     group :development, :test do
       gem 'rake'
       gem 'rspec-system-puppet'
     end
+```
 
 Install using Bundler with:
 
@@ -66,6 +70,7 @@ Create a `Rakefile` like so:
 
 You will need a spec helper for your tests to `require`. So create the file `spec/spec_helper_system.rb`:
 
+```ruby
     require 'rspec-system/spec_helper'
     require 'rspec-system-puppet/helpers'
 
@@ -88,16 +93,18 @@ You will need a spec helper for your tests to `require`. So create the file `spe
         puppet_module_install(:source => proj_root, :module_name => 'mymodule')
       end
     end
+```
 
 ### Create system spec tests
 
 I advise you to seperate the location of your system and unit tests:
 
-* spec/system - system tests
-* spec/unit - rspec-puppet and other unit tests
+* `spec/system` - system tests
+* `spec/unit` - rspec-puppet and other unit tests
 
-And create your first system tests in say `spec/system/basic_spec.rb` (make sure it has the _spec.rb suffix!):
+And create your first system tests in say `spec/system/basic_spec.rb` (make sure it has the `_spec.rb` suffix!):
 
+```ruby
     require 'spec_helper_system'
 
     describe 'basic tests:' do
@@ -122,16 +129,17 @@ And create your first system tests in say `spec/system/basic_spec.rb` (make sure
         end
       end
     end
+```
 
 ### Run spec tests
 
 Now you should be able to do:
 
-    # bundle exec rake spec:system
+    bundle exec rake spec:system
 
 If you want to test an alternate set, just use the `RSPEC_SET` environment variable like so:
 
-    # RSPEC_SET=debian-70rc1-x64 bundle exec rake spec:system
+    RSPEC_SET=debian-70rc1-x64 bundle exec rake spec:system
 
 Consult the `.nodeset.yml` file for the list of sets, and [the rspec-system nodesets introduction](https://github.com/puppetlabs/rspec-system#creating-a-nodeset-file) to learn how to manage them.
 
