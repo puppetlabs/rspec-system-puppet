@@ -1,3 +1,7 @@
+# RETIRED
+
+This project has been retired in favour of [beaker](http://rubygems.org/gems/beaker) and its relevant RSpec bridge [beaker-rspec](http://rubygems.org/gems/beaker-rspec). All tickets/PR's are now closed, future development and work should continue there.
+
 # rspec-system-puppet
 
 `rspec-system-puppet` is a Puppet plugin for [rspec-system](https://rubygems.org/gems/rspec-system). The goal here is to provide a series of helpers for performing proper system tests on Puppet related modules such as:
